@@ -14,10 +14,13 @@ RUN conda config --append channels conda-forge && conda env create -f environmen
 
 COPY data /opt/StrVCTVRE/data
 ENV BASE /opt/StrVCTVRE
+COPY strvctvre .
 COPY *.py .
 COPY *.ipynb .
 COPY *.sh .
 
+ENV PATH="${BASE}:${PATH}"
+
 SHELL ["/bin/bash", "-c"]
 
-ENTRYPOINT [ "/opt/StrVCTVRE/entrypoint.sh" ]
+CMD []
