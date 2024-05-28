@@ -21,6 +21,10 @@ import shutil
 import os
 import filecmp
 
+# Set base from ENV var BASE if available, otherwise use current working directory
+base = os.getcwd()
+if os.getenv('BASE'):
+    base = os.getenv('BASE') + '/'
 
 # In[5]:
 
@@ -34,8 +38,8 @@ parser.add_argument('-p','--phyloP',help='phyloP file path, defaults to \'data/h
 #parser.add_argument('-a','--assembly',help='Genome assembly, either GRCh38 or GRCh37',choices=['GRCh37','GRCh38'])
 args = parser.parse_args()
 args.formatIn = 'vcf'
-args.pathIn = 'data/test.vcf.gz'
-args.pathOut = 'data/test.annotated.vcf.gz'
+args.pathIn = base + 'data/test.vcf.gz'
+args.pathOut = base + 'data/test.annotated.vcf.gz'
 
 
 # Create temporary directory to store files created, deleted after finished running
@@ -123,7 +127,7 @@ df['DEL'] = df['svtype'] == 'DEL'
 
 print('\nidentifying exonic deletions and duplications...\n')
 
-exons = pybedtools.BedTool('data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
+exons = pybedtools.BedTool(base + 'data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
 df[['chrom','start','end','OldID']].to_csv(os.path.join(td,'svs.bed'),sep='\t', index=False,header=False)
 a = pybedtools.BedTool(os.path.join(td,'svs.bed'))
 b = a.intersect(exons, wa=True, wb=True).saveas(os.path.join(td,'svsExonOverlap.bed'))
@@ -173,7 +177,7 @@ an = pd.read_csv(os.path.join(td,'svsAnnotated.csv'))
 # annotate SVs on each chromosome, using random forest trained on all other chroms, to avoid overfitting
 an['path'] = 0
 presentChroms = an['chrom'].value_counts().index.values
-rf = load('data/rfTrainedAllChromsPy3.joblib')
+rf = load(base + 'data/rfTrainedAllChromsPy3.joblib')
 X = an[['DEL','numExonsFinal','phyloP', 'lowestExonRank', 'allSkippable','lowestExonsInGene', 'anyConstExon','pLIMax','loeufMin', 'cdsFracStartMin', 'cdsFracEndMax', 'cdsFracMax', 'pLI_max25_ID', 'loeuf_min25_ID','topExp','topUsage','maxStrength']].copy()
 an['path'] = rf.predict_proba(X)[:,1]
 
@@ -260,7 +264,7 @@ shutil.rmtree(td)
 # In[23]:
 
 
-if filecmp.cmp(args.pathOut,'data/test.correctAnnotation.vcf.gz',shallow=False):
+if filecmp.cmp(args.pathOut,base + 'data/test.correctAnnotation.vcf.gz',shallow=False):
     print("SUCCESS: StrVCTVRE is running correctly\n")
 else:
     print("ERROR: StrVCTVRE is not running correctly\n")

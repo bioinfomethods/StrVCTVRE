@@ -23,6 +23,11 @@ import os
 import filecmp
 
 
+# Set base from ENV var BASE if available, otherwise use current working directory
+base = os.getcwd()
+if os.getenv('BASE'):
+    base = os.getenv('BASE') + '/'
+
 # In[5]:
 
 
@@ -30,15 +35,15 @@ parser = argparse.ArgumentParser(description='Test if StrVCTVRE is annotating co
 #parser.add_argument('-i','--input',help='Input file path',required=True,metavar = '/path/to/input/file',dest='pathIn')
 #parser.add_argument('-o','--output',help='Output file path',required=True,metavar = '/path/to/output/file',dest='pathOut')
 #parser.add_argument('-f','--format',help='Input file format, either vcf or bed, defaults to vcf when not provided',choices=['vcf','bed'],dest='formatIn',default='vcf')
-parser.add_argument('-p','--phyloP',help='phyloP file path, defaults to \'data/hg38.phyloP100way.bw\' when not provided',default='data/hg38.phyloP100way.bw',
+parser.add_argument('-p','--phyloP',help='phyloP file path, defaults to ' + base + '\'data/hg38.phyloP100way.bw\' when not provided',default=base + 'data/hg38.phyloP100way.bw',
                     metavar = 'path/to/hg38.phyloP100way.bw',dest='phylopPath')
 #parser.add_argument('-a','--assembly',help='Genome assembly, either GRCh38 or GRCh37',choices=['GRCh37','GRCh38'])
 parser.add_argument('-l','--liftover',help='Liftover executable path, required if assembly is GRCh37',required=True,metavar='/path/to/liftover',dest='pathLiftover')
 
 args = parser.parse_args()
 args.formatIn = 'vcf'
-args.pathIn = 'data/test.GRCh37.vcf.gz'
-args.pathOut = 'data/test.GRCh37.annotated.vcf.gz'
+args.pathIn = base + 'data/test.GRCh37.vcf.gz'
+args.pathOut = base + 'data/test.GRCh37.annotated.vcf.gz'
 args.assembly = 'GRCh37'
 
 
@@ -164,7 +169,7 @@ df['DEL'] = df['svtype'] == 'DEL'
 
 print('\nidentifying exonic deletions and duplications...\n')
 
-exons = pybedtools.BedTool('data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
+exons = pybedtools.BedTool(base + 'data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
 df[['chrom','start','end','OldID']].to_csv(os.path.join(td,'svs.bed'),sep='\t', index=False,header=False)
 a = pybedtools.BedTool(os.path.join(td,'svs.bed'))
 b = a.intersect(exons, wa=True, wb=True).saveas(os.path.join(td,'svsExonOverlap.bed'))
@@ -214,7 +219,7 @@ an = pd.read_csv(os.path.join(td,'svsAnnotated.csv'))
 # annotate SVs on each chromosome, using random forest trained on all other chroms, to avoid overfitting
 an['path'] = 0
 presentChroms = an['chrom'].value_counts().index.values
-rf = load('data/rfTrainedAllChromsPy3.joblib')
+rf = load(base + 'data/rfTrainedAllChromsPy3.joblib')
 X = an[['DEL','numExonsFinal','phyloP', 'lowestExonRank', 'allSkippable','lowestExonsInGene', 'anyConstExon','pLIMax','loeufMin', 'cdsFracStartMin', 'cdsFracEndMax', 'cdsFracMax', 'pLI_max25_ID', 'loeuf_min25_ID','topExp','topUsage','maxStrength']].copy()
 an['path'] = rf.predict_proba(X)[:,1]
 
@@ -307,7 +312,7 @@ shutil.rmtree(td)
 # In[23]:
 
 
-if filecmp.cmp(args.pathOut,'data/test.GRCh37.correctAnnotation.vcf.gz',shallow=False):
+if filecmp.cmp(args.pathOut,base + 'data/test.GRCh37.correctAnnotation.vcf.gz',shallow=False):
     print("SUCCESS: StrVCTVRE is running correctly\n")
 else:
     print("ERROR: StrVCTVRE is not running correctly\n")

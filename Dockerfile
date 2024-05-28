@@ -13,10 +13,11 @@ COPY environment_py3.yml .
 RUN conda config --append channels conda-forge && conda env create -f environment_py3.yml
 
 COPY data /opt/StrVCTVRE/data
+ENV BASE /opt/StrVCTVRE
 COPY *.py .
 COPY *.ipynb .
 COPY *.sh .
 
 SHELL ["/bin/bash", "-c"]
 
-CMD [ "/opt/StrVCTVRE/entrypoint.sh" ]
+ENTRYPOINT [ "/opt/StrVCTVRE/entrypoint.sh" ]

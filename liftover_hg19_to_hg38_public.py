@@ -9,6 +9,10 @@ import sys,os
 import pandas as pd
 import numpy as np
 
+# Set base from ENV var BASE if available, otherwise use current working directory
+base = os.getcwd()
+if os.getenv('BASE'):
+    base = os.getenv('BASE') + '/'
 
 # In[2]:
 
@@ -58,9 +62,9 @@ def liftover(inp, work, hg19to38, outp, pathLiftover):
     # liftover to hg19 using local program
 
     if hg19to38:
-        os.system(' '.join([pathLiftover, original, 'data/hg19ToHg38.over.chain.gz', updated, error]))
+        os.system(' '.join([pathLiftover, original, base + 'data/hg19ToHg38.over.chain.gz', updated, error]))
     else:
-        os.system(' '.join([pathLiftover, original, 'data/hg38ToHg19.over.chain.gz', updated, error]))
+        os.system(' '.join([pathLiftover, original, base + 'data/hg38ToHg19.over.chain.gz', updated, error]))
 
     # Remove comments from the errors
 

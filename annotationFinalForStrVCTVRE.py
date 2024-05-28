@@ -10,6 +10,11 @@ import numpy as np
 import os
 
 
+# Set base from ENV var BASE if available, otherwise use current working directory
+base = os.getcwd()
+if os.getenv('BASE'):
+    base = os.getenv('BASE') + '/'
+
 # In[1]:
 
 # Develop a function that takes the top N intervals from an SV, and averages those, instead of just doing max.
@@ -78,7 +83,7 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
     
     # Do all exon-level and gene-level features
 
-    exons = pybedtools.BedTool('data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
+    exons = pybedtools.BedTool(base + 'data/exons_Appris_featurized_transcript_Chr1-Y_loeuf.sorted.bed')
     df['ID'] = 'sv' + pd.Series(df.index.values).apply(str)
     df[['chrom','start','end','ID']].to_csv(os.path.join(tempdir,'df.bed'),sep='\t', index=False,header=False)
     a = pybedtools.BedTool(os.path.join(tempdir,'df.bed'))
@@ -118,9 +123,10 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
 
     size = 400
 
-    with open("data/hg38chromsizes.tsv") as f:
+    with open(base + "data/hg38chromsizes.tsv") as f:
         chrms = dict((k, v) for k,v in (line.split() for line in f))
 
+    print('Reading phyloP ' + phylopPath)
     consBW = pyBigWig.open(phylopPath)
     # get phyloP value for each position in the SV
     x = []
@@ -142,7 +148,7 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
     del cons
     # Add TAD features
 
-    tads = pybedtools.BedTool('data/rep12tadsMergedhg38.bed')
+    tads = pybedtools.BedTool(base + 'data/rep12tadsMergedhg38.bed')
     df[['chrom','start','end','ID']].to_csv(os.path.join(tempdir,'df.bed'),sep='\t', index=False,header=False)
     a = pybedtools.BedTool(os.path.join(tempdir,'df.bed'))
     b = a.intersect(tads, wa=True, wb=True).saveas(os.path.join(tempdir,'dfTadOverlap.bed'))
@@ -157,7 +163,7 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
     del tadOverlap
     ## Add amino acid features
 
-    cds = pybedtools.BedTool('data/exons_CDS_Chr1-Y.sorted.bed')
+    cds = pybedtools.BedTool(base + 'data/exons_CDS_Chr1-Y.sorted.bed')
     df[['chrom','start','end','ID']].to_csv(os.path.join(tempdir,'df.bed'),sep='\t', index=False,header=False)
     a = pybedtools.BedTool(os.path.join(tempdir,'df.bed'))
     b = a.intersect(cds, wa=True, wb=True).saveas(os.path.join(tempdir,'dfCDSOverlap.bed'))
@@ -222,7 +228,7 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
 
     # Add exon inclusion features
 
-    usage = pybedtools.BedTool('data/summary_exon_usage_hg38.sorted.bed')
+    usage = pybedtools.BedTool(base + 'data/summary_exon_usage_hg38.sorted.bed')
     final[['chrom','start','end','ID']].to_csv(os.path.join(tempdir,'df.bed'),sep='\t', index=False,header=False)
     a = pybedtools.BedTool(os.path.join(tempdir,'df.bed'))
     b = a.intersect(usage, wa=True, wb=True).saveas(os.path.join(tempdir,'dfUsageOverlap.bed'))
@@ -238,13 +244,13 @@ def annotateSVs(inpath, outpath, phylopPath, tempdir):
         b = a.window(usage, w=1000).saveas(os.path.join(tempdir,'dfUsageOverlap.bed'))
         usageOverlap = pd.read_csv(os.path.join(tempdir,'dfUsageOverlap.bed'), sep='\t', header=None, 
                               names=['chrom', 'start', 'stop', 'ID', 'uChrom', 'uStart', 'uStop', 'avgUsage', 'avgExp'])
-        pd.read_csv('data/summary_exon_usage_hg38.sorted.bed')
+        pd.read_csv(base + 'data/summary_exon_usage_hg38.sorted.bed')
         out = usageOverlap.groupby('ID').apply(topUsage,n=size)
         out.drop_duplicates(subset='ID', inplace=True)
         
         if out.shape[0] == 0:
             # if still zero, assume too far from exon to be found, give the median values of all exons 
-            exp = pd.read_csv('data/summary_exon_usage_hg38.sorted.bed', names=['uChrom', 'uStart', 'uStop','Usage','Exp'],sep='\t')
+            exp = pd.read_csv(base + 'data/summary_exon_usage_hg38.sorted.bed', names=['uChrom', 'uStart', 'uStop','Usage','Exp'],sep='\t')
             usageMed = exp.Usage.median()
             expMed = exp.Exp.median()
             out = final[['ID']].copy()
