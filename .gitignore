@@ -1,3 +1,5 @@
 *.pyc
 __pycache__
 .ipynb_checkpoints
+data/test.annotated.vcf.gz
+hg38.phyloP100way.bw
